@@ -181,19 +181,17 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(height: 120),
-
-                // Header dengan Logo Custom
-                _buildHeader(),
-                SizedBox(height: 80),
-
-                // Login Form
-                Container(
-                  width: contentWidth,
-                  child: Form(
+            child: Container(
+              width: contentWidth,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(height: 60), // Kurangi height agar ada ruang
+                  // Header dengan Logo Custom
+                  _buildHeader(),
+                  SizedBox(height: 60), // Kurangi spacing
+                  // Login Form
+                  Form(
                     key: _formKey,
                     child: Column(
                       children: [
@@ -203,15 +201,11 @@ class _LoginPageState extends State<LoginPage> {
 
                         // Password Field
                         _buildPasswordField(),
-                        SizedBox(height: 44),
+                        SizedBox(height: 16),
 
-                        // Login Button
-                        _buildLoginButton(contentWidth),
-
-                        SizedBox(height: 44),
-
+                        // Forgot Password Link - POSISINYA DI SINI
                         Container(
-                          width: contentWidth,
+                          width: double.infinity,
                           child: Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
@@ -225,29 +219,33 @@ class _LoginPageState extends State<LoginPage> {
                                 );
                               },
                               style: TextButton.styleFrom(
-                                foregroundColor: Color(0xFF6B7280),
+                                foregroundColor: Color(0xFF3B82F6),
                                 padding: EdgeInsets.symmetric(
                                   horizontal: 8,
-                                  vertical: 4,
+                                  vertical: 8,
                                 ),
                               ),
                               child: Text(
                                 'Lupa Password?',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  decoration: TextDecoration.underline,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                             ),
                           ),
                         ),
-                        SizedBox(height: 20), // Kurangi spacing sebelumnya
+                        SizedBox(height: 24),
+
+                        // Login Button
+                        _buildLoginButton(contentWidth),
                       ],
                     ),
                   ),
-                ),
-              ],
+
+                  SizedBox(height: 40), // Tambah spacing di bawah
+                ],
+              ),
             ),
           ),
         ),
@@ -299,7 +297,12 @@ class _LoginPageState extends State<LoginPage> {
             letterSpacing: -0.5,
           ),
         ),
-        SizedBox(height: 40),
+        SizedBox(height: 8),
+
+        Text(
+          'Selamat datang kembali',
+          style: TextStyle(fontSize: 16, color: Color(0xFF6B7280)),
+        ),
       ],
     );
   }
