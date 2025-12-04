@@ -7,6 +7,7 @@ class UserModel {
   final int? parentId;
   final String? avatarUrl;
   final int xp;
+  final int coin;
   final int level;
   final String? rememberToken;
   final String createdAt;
@@ -22,6 +23,7 @@ class UserModel {
     this.parentId,
     this.avatarUrl,
     required this.xp,
+    required this.coin,
     required this.level,
     this.rememberToken,
     required this.createdAt,
@@ -39,6 +41,7 @@ class UserModel {
       parentId: json['parent_id'],
       avatarUrl: json['avatar_url'],
       xp: json['xp'] ?? 0,
+      coin: json['coin'] ?? 0,
       level: json['level'] ?? 1,
       rememberToken: json['remember_token'],
       createdAt: json['created_at'] ?? '',
@@ -57,6 +60,7 @@ class UserModel {
       'parent_id': parentId,
       'avatar_url': avatarUrl,
       'xp': xp,
+      'coin': coin,
       'level': level,
       'remember_token': rememberToken,
       'created_at': createdAt,

@@ -129,15 +129,15 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            label: '',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.emoji_events),
-            label: 'Challenge',
+            label: '',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.checklist), label: 'Habit'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Siswa'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.checklist), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],
       ),
     );

@@ -8,8 +8,12 @@ import 'package:keep_it_grow/screens/placeholder_screen.dart';
 import 'package:keep_it_grow/screens/student/leaderboard_screen.dart';
 import 'package:keep_it_grow/screens/student/profile_screen.dart';
 import 'package:keep_it_grow/screens/student/reflection_screen.dart';
+import 'package:keep_it_grow/screens/student/parent_support_detail_screen.dart';
+import 'package:keep_it_grow/screens/student/redeem_reward_screen.dart';
 import '../../models/user_model.dart';
+import 'package:keep_it_grow/models/student_parent_support_models.dart';
 import '../../services/dashboard_service.dart';
+import 'package:keep_it_grow/services/student/parent_support_service.dart';
 // ... import lainnya
 import 'package:keep_it_grow/screens/student/parent_support_screen.dart'; // IMPORT BARU
 
@@ -68,7 +72,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => StudentParentSupportScreen()),
-    );
+    ).then((_) => _loadDashboardData());
   }
 
   // ... metode lainnya tetap sama
@@ -136,22 +140,22 @@ class _StudentDashboardState extends State<StudentDashboard> {
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            label: '',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.emoji_events),
-            label: 'Challenges',
+            label: '',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.checklist), label: 'Habits'),
+          BottomNavigationBarItem(icon: Icon(Icons.checklist), label: ''),
           BottomNavigationBarItem(
             icon: Icon(Icons.psychology_rounded),
-            label: 'Reflections',
+            label: '',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.leaderboard),
-            label: 'Leaderboard',
+            label: '',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],
       ),
     );
@@ -233,9 +237,9 @@ class _DashboardContent extends StatelessWidget {
                 children: [
                   _buildHeaderSection(profile),
                   SizedBox(height: 24),
-                  _buildXpStreakCard(profile, stats),
+                  _buildXpStreakCard(context, profile, stats),
                   SizedBox(height: 24),
-                  _buildParentSupportSection(parentSupport),
+                  _buildParentSupportSection(context, parentSupport),
                   SizedBox(height: 24),
                   _buildTodayTasksSection(context, latestHabits),
                   SizedBox(height: 24),
@@ -297,7 +301,10 @@ class _DashboardContent extends StatelessWidget {
   // WIDGET BARU: Parent Support Section
   // screens/student_dashboard.dart - BAGIAN 8
   // screens/student_dashboard.dart - BAGIAN 8 (DIPERBAIKI)
-  Widget _buildParentSupportSection(dynamic parentSupportData) {
+  Widget _buildParentSupportSection(
+    BuildContext context,
+    dynamic parentSupportData,
+  ) {
     // Konversi ke Map<String, dynamic> dengan safety check
     final Map<String, dynamic> supportData = _convertToMap(parentSupportData);
 
@@ -315,7 +322,12 @@ class _DashboardContent extends StatelessWidget {
       return _buildNoSupportMessageState(message);
     }
 
-    return _buildActiveSupportSection(latestSupport, unreadCount, message);
+    return _buildActiveSupportSection(
+      context,
+      latestSupport,
+      unreadCount,
+      message,
+    );
   }
 
   // Helper method untuk konversi tipe Map
@@ -333,6 +345,7 @@ class _DashboardContent extends StatelessWidget {
 
   // screens/student_dashboard.dart - BAGIAN 11
   Widget _buildActiveSupportSection(
+    BuildContext context,
     Map<String, dynamic>? latestSupport,
     int unreadCount,
     String message,
@@ -398,7 +411,8 @@ class _DashboardContent extends StatelessWidget {
         SizedBox(height: unreadCount > 0 ? 12 : 0),
 
         // Preview pesan terbaru
-        if (latestSupport != null) _buildParentSupportPreview(latestSupport),
+        if (latestSupport != null)
+          _buildParentSupportPreview(context, latestSupport),
 
         // CTA Button
         SizedBox(height: 16),
@@ -484,91 +498,130 @@ class _DashboardContent extends StatelessWidget {
   }
 
   // Widget untuk preview pesan dukungan
-  Widget _buildParentSupportPreview(Map<String, dynamic> support) {
+  Future<void> _openParentSupportDetail(
+    BuildContext context,
+    Map<String, dynamic> support,
+  ) async {
+    final parentSupport = StudentParentSupport.fromJson(_convertToMap(support));
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ParentSupportDetailScreen(
+          parentSupport: parentSupport,
+          onMarkAsRead: () async {
+            if (parentSupport.id == 0) return;
+            try {
+              await ParentSupportService().markAsRead(parentSupport.id);
+              onRefresh();
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Gagal menandai pesan: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+      ),
+    );
+
+    onRefresh();
+  }
+
+  Widget _buildParentSupportPreview(
+    BuildContext context,
+    Map<String, dynamic> support,
+  ) {
     final isRead = support['is_read'] ?? false;
     final parentName = support['parent_name'] ?? 'Orang Tua';
     final message = support['message'] ?? '';
     final timeAgo = support['time_ago'] ?? '';
 
-    return Card(
-      margin: EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: isRead ? Colors.white : Color(0xFFF0FDF4),
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFF3F4F6),
+    return InkWell(
+      onTap: () => _openParentSupportDetail(context, support),
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
+        margin: EdgeInsets.only(bottom: 12),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: isRead ? Colors.white : Color(0xFFF0FDF4),
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFF3F4F6),
+                ),
+                child: Icon(
+                  Icons.family_restroom,
+                  color: Color(0xFF6B7280),
+                  size: 20,
+                ),
               ),
-              child: Icon(
-                Icons.family_restroom,
-                color: Color(0xFF6B7280),
-                size: 20,
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          parentName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF111827),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      if (!isRead)
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFF59E0B).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
                           child: Text(
-                            'Baru',
+                            parentName,
                             style: TextStyle(
-                              fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFFF59E0B),
+                              color: Color(0xFF111827),
+                              fontSize: 14,
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    message.length > 60
-                        ? '${message.substring(0, 60)}...'
-                        : message,
-                    style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    timeAgo,
-                    style: TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)),
-                  ),
-                ],
+                        if (!isRead)
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFF59E0B).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Baru',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFF59E0B),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      message.length > 60
+                          ? '${message.substring(0, 60)}...'
+                          : message,
+                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      timeAgo,
+                      style: TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
-          ],
+              Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+            ],
+          ),
         ),
       ),
     );
@@ -719,12 +772,14 @@ class _DashboardContent extends StatelessWidget {
 
   // ... widget methods lainnya TETAP SAMA
   Widget _buildXpStreakCard(
+    BuildContext context,
     Map<String, dynamic> profile,
     Map<String, dynamic> stats,
   ) {
     final xp = profile['xp'] ?? user.xp;
     final streak = stats['streak'] ?? 0;
     final habitsDone = stats['habits_done'] ?? 0;
+    final coins = profile['coin'] ?? user.coin;
 
     return Container(
       padding: EdgeInsets.all(20),
@@ -741,12 +796,14 @@ class _DashboardContent extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          Wrap(
+            alignment: WrapAlignment.spaceEvenly,
+            spacing: 16,
+            runSpacing: 12,
             children: [
               _buildStatItem("$xp XP", Icons.auto_awesome, Color(0xFF3B82F6)),
               _buildStatItem(
-                streak > 0 ? "🔥 $streak days" : "0 days",
+                streak > 0 ? "$streak days" : "0 days",
                 Icons.local_fire_department,
                 streak > 0 ? Color(0xFFEF4444) : Color(0xFF9CA3AF),
               ),
@@ -755,9 +812,37 @@ class _DashboardContent extends StatelessWidget {
                 Icons.check_circle,
                 Color(0xFF10B981),
               ),
+              _buildStatItem(
+                "$coins Koin",
+                Icons.monetization_on,
+                Color(0xFFF59E0B),
+              ),
             ],
           ),
           SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RedeemRewardScreen(user: user),
+                  ),
+                );
+              },
+              icon: Icon(Icons.card_giftcard),
+              label: Text('Redeem Koin jadi Reward'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF3B82F6),
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
