@@ -226,7 +226,7 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
       backgroundColor: Color(0xFFF9FAFB),
       appBar: AppBar(
         title: Text(
-          'Profil Guru',
+          'Profil Monitor',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             color: Color(0xFF111827),
@@ -428,7 +428,7 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Guru',
+                      'Monitor',
                       style: TextStyle(
                         color: Color(0xFF3B82F6),
                         fontSize: 14,
@@ -460,7 +460,7 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Kelas yang Diajar',
+                            'Divisi yang Dipantau',
                             style: TextStyle(
                               fontSize: 14,
                               color: Color(0xFF6B7280),

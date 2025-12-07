@@ -101,7 +101,7 @@ class _TeacherChallengesScreenState extends State<TeacherChallengesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Challenges Kelas",
+                  "Challenges Divisi",
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -111,7 +111,7 @@ class _TeacherChallengesScreenState extends State<TeacherChallengesScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  "Kelola challenges siswa di kelas Anda",
+                  "Kelola challenges member di divisi Anda",
                   style: TextStyle(
                     fontSize: 16,
                     color: Color(0xFF6B7280),
@@ -229,7 +229,7 @@ class _TeacherChallengesScreenState extends State<TeacherChallengesScreen> {
       backgroundColor: Color(0xFFF9FAFB),
       appBar: AppBar(
         title: Text(
-          'Challenges Kelas',
+          'Challenges Divisi',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             color: Color(0xFF111827),
@@ -353,7 +353,7 @@ class _TeacherChallengesScreenState extends State<TeacherChallengesScreen> {
                 Icon(Icons.school, color: Color(0xFF3B82F6)),
                 SizedBox(width: 8),
                 Text(
-                  'Kelas ${_kelasInfo!['nama']}',
+                  'Divisi ${_kelasInfo!['nama']}',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -416,7 +416,7 @@ class _TeacherChallengesScreenState extends State<TeacherChallengesScreen> {
           ),
           SizedBox(height: 8),
           Text(
-            "Belum ada challenges yang dibuat untuk kelas ini",
+            "Belum ada challenges yang dibuat untuk divisi ini",
             style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
             textAlign: TextAlign.center,
           ),
@@ -488,7 +488,7 @@ class _TeacherChallengesScreenState extends State<TeacherChallengesScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Progress Kelas',
+                        'Progress Divisi',
                         style: TextStyle(
                           fontSize: 12,
                           color: Color(0xFF6B7280),

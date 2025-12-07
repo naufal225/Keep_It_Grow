@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'screens/auth/login_screen.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'screens/auth/splash_screen.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await initializeDateFormatting('id_ID', null);
   runApp(MyApp());
 }
@@ -17,7 +20,7 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Color(0xFFF9FAFB),
         fontFamily: 'Inter',
       ),
-      home: LoginPage(),
+      home: SplashScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

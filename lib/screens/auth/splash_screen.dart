@@ -56,7 +56,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF3B82F6),
+      backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -75,10 +75,11 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ],
               ),
-              child: Icon(
-                Icons.psychology_rounded,
-                size: 50,
-                color: Color(0xFF3B82F6),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             SizedBox(height: 24),
@@ -87,7 +88,7 @@ class _SplashScreenState extends State<SplashScreen> {
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: Color(0xFF3B82F6),
                 letterSpacing: -0.5,
               ),
             ),

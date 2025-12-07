@@ -403,11 +403,11 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           ),
           if (kelasInfo != null) ...[
             _buildDivider(),
-            _buildInfoRow(
-              'Kelas',
-              kelasInfo['nama'] ?? '',
-              Icons.school,
-              null,
+          _buildInfoRow(
+            'Divisi',
+            kelasInfo['nama'] ?? '',
+            Icons.school,
+            null,
               isEditable: false,
             ),
           ],

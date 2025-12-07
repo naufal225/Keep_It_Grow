@@ -286,7 +286,7 @@ class _DashboardContent extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    "Ortu",
+                    "Family",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 10,

@@ -45,7 +45,7 @@ class _RedeemRewardScreenState extends State<RedeemRewardScreen>
       child: Scaffold(
         backgroundColor: const Color(0xFFF9FAFB),
         appBar: AppBar(
-          title: const Text('Reward Siswa'),
+          title: const Text('Reward Member'),
           backgroundColor: Colors.white,
           foregroundColor: const Color(0xFF111827),
           elevation: 0,

@@ -64,7 +64,7 @@ class _TeacherStudentDetailScreenState
       backgroundColor: Color(0xFFF9FAFB),
       appBar: AppBar(
         title: Text(
-          'Detail Siswa',
+          'Detail Member',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             color: Color(0xFF111827),
@@ -92,7 +92,7 @@ class _TeacherStudentDetailScreenState
                   Icon(Icons.error_outline, size: 64, color: Color(0xFFEF4444)),
                   SizedBox(height: 16),
                   Text(
-                    'Gagal memuat detail siswa',
+                    'Gagal memuat detail member',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,

@@ -100,7 +100,7 @@ class _TeacherHabitDetailScreenState extends State<TeacherHabitDetailScreen> {
       builder: (context) => AlertDialog(
         title: Text('Tolak Submission'),
         content: Text(
-          'Apakah Anda yakin ingin menolak submission ini? Siswa dapat mengirim ulang bukti.',
+          'Apakah Anda yakin ingin menolak submission ini? Member dapat mengirim ulang bukti.',
         ),
         actions: [
           TextButton(
@@ -261,7 +261,7 @@ class _TeacherHabitDetailScreenState extends State<TeacherHabitDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Siswa: ${student['student_name']}',
+              'Member: ${student['student_name']}',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
@@ -526,7 +526,7 @@ class _TeacherHabitDetailScreenState extends State<TeacherHabitDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Statistik Kelas',
+                    'Statistik Divisi',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -561,7 +561,7 @@ class _TeacherHabitDetailScreenState extends State<TeacherHabitDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildMiniStat(
-                        'Total Siswa',
+                        'Total Member',
                         '${statistics['total_students']}',
                       ),
                       _buildMiniStat(
@@ -627,7 +627,7 @@ class _TeacherHabitDetailScreenState extends State<TeacherHabitDetailScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            '${waitingValidation.length} siswa',
+                            '${waitingValidation.length} member',
                             style: TextStyle(
                               color: Colors.orange,
                               fontSize: 12,
@@ -664,7 +664,7 @@ class _TeacherHabitDetailScreenState extends State<TeacherHabitDetailScreen> {
                   Row(
                     children: [
                       Text(
-                        'Semua Siswa',
+                        'Semua Member',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -673,7 +673,7 @@ class _TeacherHabitDetailScreenState extends State<TeacherHabitDetailScreen> {
                       ),
                       Spacer(),
                       Text(
-                        '${studentProgress.length} siswa',
+                        '${studentProgress.length} member',
                         style: TextStyle(
                           color: Color(0xFF6B7280),
                           fontSize: 14,
@@ -687,7 +687,7 @@ class _TeacherHabitDetailScreenState extends State<TeacherHabitDetailScreen> {
                       padding: EdgeInsets.symmetric(vertical: 16),
                       child: Center(
                         child: Text(
-                          'Tidak ada siswa lain',
+                          'Tidak ada member lain',
                           style: TextStyle(color: Color(0xFF6B7280)),
                         ),
                       ),

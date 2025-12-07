@@ -293,7 +293,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       child: Column(
         children: [
           Text(
-            'TOP 3 SISWA',
+            'TOP 3 MEMBER',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -444,7 +444,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       child: Column(
         children: [
           Text(
-            'Leaderboard Kelas',
+            'Leaderboard Divisi',
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -454,7 +454,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '${classInfo.nama} • ${classInfo.totalStudents} Siswa',
+            '${classInfo.nama} • ${classInfo.totalStudents} Member',
             style: const TextStyle(
               fontSize: 16,
               color: Colors.white70,
@@ -620,26 +620,32 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 
   Widget _buildSuccessState(LeaderboardResponse data) {
-    return Column(
-      children: [
-        _buildHeader(data.classInfo, data.currentStudent, data.currentStudentRank),
-        if (data.students.length >= 3) 
-          _buildTopThreeStudents(data.students),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _refreshData,
-            backgroundColor: Colors.white,
-            color: Color(0xFF3B82F6),
-            child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: data.students.length,
-              itemBuilder: (context, index) {
-                return _buildStudentCard(data.students[index], context);
-              },
+    final students = data.students;
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      backgroundColor: Colors.white,
+      color: const Color(0xFF3B82F6),
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: _buildHeader(
+              data.classInfo,
+              data.currentStudent,
+              data.currentStudentRank,
             ),
           ),
-        ),
-      ],
+          if (students.length >= 3)
+            SliverToBoxAdapter(child: _buildTopThreeStudents(students)),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => _buildStudentCard(students[index], context),
+              childCount: students.length,
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        ],
+      ),
     );
   }
 
@@ -675,7 +681,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Leaderboard akan terisi ketika siswa mulai mengumpulkan XP',
+              'Leaderboard akan terisi ketika member mulai mengumpulkan XP',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14, 
@@ -727,3 +733,4 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     );
   }
 }
+

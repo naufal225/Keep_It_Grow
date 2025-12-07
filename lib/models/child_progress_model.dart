@@ -29,7 +29,7 @@ class ChildProgress {
     return ChildProgress(
       id: childData['id'] ?? 0,
       name: childData['name'] ?? '',
-      className: childData['class'] ?? 'Belum ada kelas',
+      className: childData['class'] ?? 'Belum ada divisi',
       level: childData['level'] ?? 1,
       xp: childData['xp'] ?? 0,
       xpForNextLevel: childData['xp_for_next_level'] ?? 1000,
@@ -68,7 +68,7 @@ class ChildBasicInfo {
       name: json['name'] ?? '',
       className:
           json['class'] ??
-          'Belum ada kelas', // PERBAIKAN: 'class' bukan 'className'
+          'Belum ada divisi', // PERBAIKAN: 'class' bukan 'className'
       level: json['level'] ?? 1,
       xp: json['xp'] ?? 0,
       avatarUrl: json['avatar_url'],

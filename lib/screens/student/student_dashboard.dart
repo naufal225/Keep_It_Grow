@@ -280,7 +280,7 @@ class _DashboardContent extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Text(
-              'Belum Ada Orang Tua Terhubung',
+              'Belum Ada Family Terhubung',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF111827),
@@ -288,7 +288,7 @@ class _DashboardContent extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'Mintalah guru untuk menghubungkan akun dengan orang tua Anda',
+              'Mintalah monitor untuk menghubungkan akun dengan family Anda',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
             ),
@@ -357,7 +357,7 @@ class _DashboardContent extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "Dukungan Orang Tua",
+              "Dukungan Family",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -460,7 +460,7 @@ class _DashboardContent extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Text(
-              'Orang Tua Siap Memberi Dukungan',
+              'Family Siap Memberi Dukungan',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF111827),
@@ -535,7 +535,7 @@ class _DashboardContent extends StatelessWidget {
     Map<String, dynamic> support,
   ) {
     final isRead = support['is_read'] ?? false;
-    final parentName = support['parent_name'] ?? 'Orang Tua';
+    final parentName = support['parent_name'] ?? 'Family';
     final message = support['message'] ?? '';
     final timeAgo = support['time_ago'] ?? '';
 

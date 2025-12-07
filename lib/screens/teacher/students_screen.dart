@@ -68,7 +68,7 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
       backgroundColor: Color(0xFFF9FAFB),
       appBar: AppBar(
         title: Text(
-          'Daftar Siswa',
+          'Daftar Member',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             color: Color(0xFF111827),
@@ -95,7 +95,7 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
                   Icon(Icons.error_outline, size: 64, color: Color(0xFFEF4444)),
                   SizedBox(height: 16),
                   Text(
-                    'Gagal memuat data siswa',
+                    'Gagal memuat data member',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -147,7 +147,7 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
                 Icon(Icons.school, color: Color(0xFF3B82F6)),
                 SizedBox(width: 8),
                 Text(
-                  'Kelas ${_kelasInfo!['nama']}',
+                  'Divisi ${_kelasInfo!['nama']}',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -156,7 +156,7 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
                 ),
                 Spacer(),
                 Text(
-                  '${_students.length} Siswa',
+                  '${_students.length} Member',
                   style: TextStyle(color: Color(0xFF6B7280)),
                 ),
               ],
@@ -180,7 +180,7 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
                         ),
                         SizedBox(height: 16),
                         Text(
-                          'Belum ada siswa di kelas',
+                          'Belum ada member di divisi',
                           style: TextStyle(
                             color: Color(0xFF6B7280),
                             fontSize: 16,

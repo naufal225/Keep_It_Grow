@@ -207,7 +207,7 @@ class _StudentParentSupportScreenState extends State<StudentParentSupportScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Dukungan Orang Tua',
+                'Dukungan Family',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -303,7 +303,7 @@ class _StudentParentSupportScreenState extends State<StudentParentSupportScreen>
           ),
           SizedBox(height: 8),
           Text(
-            'Orang tua Anda akan mengirimkan pesan\nmotivasi dan dukungan di sini',
+            'Family Anda akan mengirimkan pesan\nmotivasi dan dukungan di sini',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -320,7 +320,7 @@ class _StudentParentSupportScreenState extends State<StudentParentSupportScreen>
     return Scaffold(
       backgroundColor: Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text('Dukungan Orang Tua'),
+        title: Text('Dukungan Family'),
         backgroundColor: Colors.white,
         foregroundColor: Color(0xFF111827),
         elevation: 0,

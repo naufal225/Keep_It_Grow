@@ -95,7 +95,7 @@ class _TeacherHabitsScreenState extends State<TeacherHabitsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Habits Kelas",
+                  "Habits Divisi",
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -105,7 +105,7 @@ class _TeacherHabitsScreenState extends State<TeacherHabitsScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  "Kelola habits siswa di kelas Anda",
+                  "Kelola habits member di divisi Anda",
                   style: TextStyle(
                     fontSize: 16,
                     color: Color(0xFF6B7280),
@@ -223,7 +223,7 @@ class _TeacherHabitsScreenState extends State<TeacherHabitsScreen> {
       backgroundColor: Color(0xFFF9FAFB),
       appBar: AppBar(
         title: Text(
-          'Habits Kelas',
+          'Habits Divisi',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             color: Color(0xFF111827),
@@ -386,7 +386,7 @@ class _TeacherHabitsScreenState extends State<TeacherHabitsScreen> {
                 Icon(Icons.school, color: Color(0xFF3B82F6)),
                 SizedBox(width: 8),
                 Text(
-                  'Kelas ${_kelasInfo!['nama']}',
+                  'Divisi ${_kelasInfo!['nama']}',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -449,7 +449,7 @@ class _TeacherHabitsScreenState extends State<TeacherHabitsScreen> {
           ),
           SizedBox(height: 8),
           Text(
-            "Belum ada habits yang dibuat untuk kelas ini",
+            "Belum ada habits yang dibuat untuk divisi ini",
             style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
             textAlign: TextAlign.center,
           ),
@@ -541,7 +541,7 @@ class _TeacherHabitsScreenState extends State<TeacherHabitsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Progress Kelas',
+                        'Progress Divisi',
                         style: TextStyle(
                           fontSize: 12,
                           color: Color(0xFF6B7280),

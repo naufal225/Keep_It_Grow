@@ -223,7 +223,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
       backgroundColor: Color(0xFFF9FAFB),
       appBar: AppBar(
         title: Text(
-          'Profil Orang Tua',
+          'Profil Family',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             color: Color(0xFF111827),
@@ -399,7 +399,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Orang Tua',
+                      'Family',
                       style: TextStyle(
                         color: Color(0xFF8B5CF6),
                         fontSize: 14,

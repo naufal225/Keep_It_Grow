@@ -101,7 +101,7 @@ class _TeacherChallengeDetailScreenState extends State<TeacherChallengeDetailScr
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Tolak Submission'),
-        content: Text('Apakah Anda yakin ingin menolak submission ini? Siswa dapat mengirim ulang bukti.'),
+        content: Text('Apakah Anda yakin ingin menolak submission ini? Member dapat mengirim ulang bukti.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -258,7 +258,7 @@ class _TeacherChallengeDetailScreenState extends State<TeacherChallengeDetailScr
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Siswa: ${participant['student_name']}',
+              'Member: ${participant['student_name']}',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
@@ -467,7 +467,7 @@ class _TeacherChallengeDetailScreenState extends State<TeacherChallengeDetailScr
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Statistik Kelas',
+                    'Statistik Divisi',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -489,7 +489,7 @@ class _TeacherChallengeDetailScreenState extends State<TeacherChallengeDetailScr
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildMiniStat('Total Siswa', '${statistics['total_students']}'),
+                      _buildMiniStat('Total Member', '${statistics['total_students']}'),
                       _buildMiniStat('Menunggu Validasi', '${statistics['submitted_count']}', isHighlighted: statistics['submitted_count'] > 0),
                       _buildMiniStat('Selesai', '${statistics['completed_count']}'),
                     ],
@@ -537,7 +537,7 @@ class _TeacherChallengeDetailScreenState extends State<TeacherChallengeDetailScr
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            '${waitingValidation.length} siswa',
+                            '${waitingValidation.length} member',
                             style: TextStyle(
                               color: Colors.orange,
                               fontSize: 12,
@@ -577,7 +577,7 @@ class _TeacherChallengeDetailScreenState extends State<TeacherChallengeDetailScr
                       ),
                       Spacer(),
                       Text(
-                        '${participants.length} siswa',
+                        '${participants.length} member',
                         style: TextStyle(
                           color: Color(0xFF6B7280),
                           fontSize: 14,

@@ -29,7 +29,7 @@ class Child {
       level: json['level'] ?? 1,
       xp: json['xp'] ?? 0,
       avatarUrl: json['avatar_url'],
-      className: json['class'] ?? 'Belum ada kelas',
+      className: json['class'] ?? 'Belum ada divisi',
       weeklyActivity: json['weekly_activity'] ?? 0,
       lastActivity: json['last_activity'] ?? '',
     );

@@ -274,7 +274,7 @@ class _DashboardContent extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  "Kelas ${kelasInfo['nama'] ?? ''}",
+                  "Divisi ${kelasInfo['nama'] ?? ''}",
                   style: TextStyle(
                     fontSize: 16,
                     color: Color(0xFF6B7280),
@@ -306,7 +306,7 @@ class _DashboardContent extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    "Guru",
+                    "Monitor",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 10,
@@ -327,7 +327,7 @@ class _DashboardContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Statistik Kelas",
+          "Statistik Divisi",
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
@@ -429,7 +429,7 @@ class _DashboardContent extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "Leaderboard Kelas",
+              "Leaderboard Divisi",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
