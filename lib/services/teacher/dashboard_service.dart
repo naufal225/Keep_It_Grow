@@ -1,12 +1,12 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:keep_it_grow/services/auth_http.dart' as http;
 import 'package:keep_it_grow/services/auth_service.dart';
 import 'package:keep_it_grow/services/constants.dart';
 
 class GuruDashboardService {
   static const String baseUrl = ServiceConstants.apiBase;
   static Future<Map<String, dynamic>> getGuruDashboard() async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/guru/dashboard'),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:keep_it_grow/core/utils/storage_url_helper.dart';
 import '../../models/user_model.dart';
 import '../../services/teacher/challenge_service.dart';
 
@@ -156,6 +157,8 @@ class _TeacherChallengeDetailScreenState extends State<TeacherChallengeDetailScr
   }
 
   void _showProofImage(String proofUrl, String studentName) {
+    final resolvedProofUrl = buildStorageUrl(proofUrl);
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -187,7 +190,7 @@ class _TeacherChallengeDetailScreenState extends State<TeacherChallengeDetailScr
               ),
               SizedBox(height: 16),
               Expanded(
-                child: proofUrl.isNotEmpty
+                child: resolvedProofUrl.isNotEmpty
                     ? Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
@@ -196,7 +199,7 @@ class _TeacherChallengeDetailScreenState extends State<TeacherChallengeDetailScr
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
-                            proofUrl,
+                            resolvedProofUrl,
                             fit: BoxFit.contain,
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;

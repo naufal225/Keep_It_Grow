@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:keep_it_grow/services/auth_http.dart' as http;
 import 'package:keep_it_grow/services/auth_service.dart';
 import 'package:keep_it_grow/services/constants.dart';
 
@@ -8,7 +8,7 @@ class ChildProgressService {
   
   /// Mendapatkan progress detail untuk satu anak
   static Future<Map<String, dynamic>> getChildProgress(int childId) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/ortu/child-progress/$childId'),
@@ -31,7 +31,7 @@ class ChildProgressService {
 
   /// Mendapatkan data semua anak (untuk segmented control)
   static Future<Map<String, dynamic>> getAllChildrenProgress() async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/ortu/child-progress'),

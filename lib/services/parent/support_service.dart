@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:keep_it_grow/services/auth_http.dart' as http;
 import '../../services/constants.dart';
 import '../../services/auth_service.dart';
 
@@ -11,7 +11,7 @@ class ParentSupportService {
     required int studentId,
     required String message,
   }) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/ortu/supports'),
@@ -39,7 +39,7 @@ class ParentSupportService {
 
   /// Mendapatkan riwayat pesan dukungan
   static Future<Map<String, dynamic>> getSupportHistory() async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/ortu/supports'),
@@ -62,7 +62,7 @@ class ParentSupportService {
 
   /// Mendapatkan detail pesan dukungan
   static Future<Map<String, dynamic>> getSupportDetail(int supportId) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/ortu/supports/$supportId'),

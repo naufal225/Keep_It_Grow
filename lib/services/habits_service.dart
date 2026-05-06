@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:keep_it_grow/services/auth_http.dart' as http;
 import 'auth_service.dart';
 import 'constants.dart';
 
@@ -8,7 +8,7 @@ class HabitsService {
 
   // Get all habits for student
   static Future<Map<String, dynamic>> getStudentHabits() async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     
     final response = await http.get(
       Uri.parse('$baseUrl/siswa/habits'),
@@ -28,7 +28,7 @@ class HabitsService {
 
   // Get habits by status
   static Future<Map<String, dynamic>> getStudentHabitsByStatus(String status) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     
     final response = await http.get(
       Uri.parse('$baseUrl/siswa/habits?status=$status'),
@@ -48,7 +48,7 @@ class HabitsService {
 
   // Create new habit
   static Future<Map<String, dynamic>> createHabit(Map<String, dynamic> data) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     
     final response = await http.post(
       Uri.parse('$baseUrl/siswa/habits'),
@@ -70,7 +70,7 @@ class HabitsService {
 
   // Update habit
   static Future<Map<String, dynamic>> updateHabit(int id, Map<String, dynamic> data) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     
     final response = await http.put(
       Uri.parse('$baseUrl/siswa/habits/$id'),
@@ -92,7 +92,7 @@ class HabitsService {
 
   // Delete habit
   static Future<void> deleteHabit(int id) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     
     final response = await http.delete(
       Uri.parse('$baseUrl/siswa/habits/$id'),
@@ -110,7 +110,7 @@ class HabitsService {
 
   // Get habit detail
   static Future<Map<String, dynamic>> getHabitDetail(int id) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     
     final response = await http.get(
       Uri.parse('$baseUrl/siswa/habits/$id'),
@@ -130,7 +130,7 @@ class HabitsService {
 
   // Join habit
   static Future<Map<String, dynamic>> joinHabit(int habitId) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     
     final response = await http.post(
       Uri.parse('$baseUrl/siswa/habits/$habitId/join'),
@@ -154,7 +154,7 @@ class HabitsService {
     String proofImagePath,
     String note,
   ) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
 
     var request = http.MultipartRequest(
       'POST',
@@ -183,7 +183,7 @@ class HabitsService {
 
   // Get habit logs
   static Future<Map<String, dynamic>> getHabitLogs(int habitId) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     
     final response = await http.get(
       Uri.parse('$baseUrl/siswa/habits/$habitId/logs'),
@@ -203,7 +203,7 @@ class HabitsService {
 
   // Get today's habits
   static Future<Map<String, dynamic>> getTodayHabits() async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     
     final response = await http.get(
       Uri.parse('$baseUrl/siswa/habits/today'),

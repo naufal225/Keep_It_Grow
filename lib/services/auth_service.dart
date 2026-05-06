@@ -1,6 +1,7 @@
 // services/auth_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:keep_it_grow/core/navigation/app_router.dart';
 import 'constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
@@ -10,6 +11,7 @@ class AuthService {
 
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'user_data';
+  static bool _isHandlingSessionExpired = false;
 
   // Helper method untuk handle shared preferences errors
   static Future<SharedPreferences> _getPreferences() async {
@@ -38,6 +40,17 @@ class AuthService {
       print('Error getting token: $e');
       return null;
     }
+  }
+
+  static Future<String> requireToken() async {
+    final token = await getToken();
+
+    if (token == null || token.isEmpty) {
+      await handleSessionExpired();
+      throw Exception('Sesi telah berakhir. Silakan login kembali.');
+    }
+
+    return token;
   }
 
   static Future<void> saveUser(UserModel user) async {
@@ -73,6 +86,34 @@ class AuthService {
     } catch (e) {
       print('Error clearing auth data: $e');
       throw Exception('Gagal menghapus data auth');
+    }
+  }
+
+  static Future<void> handleUnauthorizedResponse(http.BaseResponse response) async {
+    if (response.statusCode != 401) {
+      return;
+    }
+
+    await handleSessionExpired();
+    throw Exception('Sesi telah berakhir. Silakan login kembali.');
+  }
+
+  static Future<void> handleSessionExpired() async {
+    if (_isHandlingSessionExpired) {
+      return;
+    }
+
+    _isHandlingSessionExpired = true;
+
+    try {
+      await clearAuthData();
+      AppRouter.redirectToLogin();
+    } catch (e) {
+      print('Error handling expired session: $e');
+    } finally {
+      Future<void>.delayed(const Duration(seconds: 1), () {
+        _isHandlingSessionExpired = false;
+      });
     }
   }
 

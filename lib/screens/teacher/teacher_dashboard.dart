@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:keep_it_grow/core/utils/storage_url_helper.dart';
 import 'package:keep_it_grow/screens/teacher/challenges_screen.dart';
 import 'package:keep_it_grow/screens/teacher/habits_screen.dart';
 import 'package:keep_it_grow/screens/teacher/students_screen.dart';
@@ -720,7 +721,7 @@ void _showProofImage(BuildContext context, String proofUrl) {
     builder: (context) => Dialog(
       child: proofUrl.isNotEmpty
           ? Image.network(
-              _buildStorageUrl(proofUrl),
+              buildStorageUrl(proofUrl),
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) => Container(
                 padding: const EdgeInsets.all(20),
@@ -813,13 +814,3 @@ Widget _buildEmptyState(String message, IconData icon) {
   );
 }
 
-// Helper untuk merakit URL storage dari path relatif
-String _buildStorageUrl(String url) {
-  if (url.isEmpty) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  const String base = 'http://10.0.2.2:8000/storage/';
-  if (url.startsWith('/')) {
-    return base + url.substring(1);
-  }
-  return base + url;
-}

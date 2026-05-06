@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:keep_it_grow/services/auth_http.dart' as http;
 import '../constants.dart';
 import '../auth_service.dart';
 
@@ -11,7 +11,7 @@ class TeacherStudentService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': 'Bearer ${await AuthService.getToken()}',
+          'Authorization': 'Bearer ${await AuthService.requireToken()}',
         },
       );
 
@@ -32,7 +32,7 @@ class TeacherStudentService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': 'Bearer ${await AuthService.getToken()}',
+          'Authorization': 'Bearer ${await AuthService.requireToken()}',
         },
       );
 

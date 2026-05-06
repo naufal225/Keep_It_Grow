@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:keep_it_grow/services/auth_http.dart' as http;
 import '../constants.dart';
 import '../auth_service.dart';
 
@@ -7,10 +7,7 @@ class StudentService {
   StudentService();
 
   Future<Map<String, String>> _getHeaders() async {
-    final token = await AuthService.getToken();
-    if (token == null) {
-      throw Exception('Token tidak tersedia. Silakan login kembali.');
-    }
+    final token = await AuthService.requireToken();
 
     return {
       'Content-Type': 'application/json',
@@ -29,8 +26,6 @@ class StudentService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
-      } else if (response.statusCode == 401) {
-        throw Exception('Sesi telah berakhir. Silakan login kembali.');
       } else {
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? 'Gagal memuat leaderboard: ${response.statusCode}');
@@ -50,8 +45,6 @@ class StudentService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
-      } else if (response.statusCode == 401) {
-        throw Exception('Sesi telah berakhir. Silakan login kembali.');
       } else {
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? 'Gagal memuat top five: ${response.statusCode}');
@@ -71,8 +64,6 @@ class StudentService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
-      } else if (response.statusCode == 401) {
-        throw Exception('Sesi telah berakhir. Silakan login kembali.');
       } else if (response.statusCode == 404) {
         throw Exception('Data siswa tidak ditemukan');
       } else {
@@ -94,8 +85,6 @@ class StudentService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
-      } else if (response.statusCode == 401) {
-        throw Exception('Sesi telah berakhir. Silakan login kembali.');
       } else {
         final errorData = json.decode(response.body);
         throw Exception(errorData['message'] ?? 'Gagal memuat progress: ${response.statusCode}');

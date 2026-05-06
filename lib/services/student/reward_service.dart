@@ -1,15 +1,12 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:keep_it_grow/services/auth_http.dart' as http;
 import '../auth_service.dart';
 import '../constants.dart';
 import 'package:keep_it_grow/models/student_reward_models.dart';
 
 class RewardService {
   Future<Map<String, String>> _getHeaders() async {
-    final token = await AuthService.getToken();
-    if (token == null) {
-      throw Exception('Token tidak tersedia. Silakan login kembali.');
-    }
+    final token = await AuthService.requireToken();
 
     return {
       'Content-Type': 'application/json',

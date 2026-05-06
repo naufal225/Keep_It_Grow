@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:keep_it_grow/services/auth_http.dart' as http;
+import 'auth_service.dart';
 import 'constants.dart';
 
 class ReflectionService {
@@ -8,15 +8,10 @@ class ReflectionService {
 
   static Future<Map<String, String>> _getHeaders() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = await AuthService.requireToken();
       
       print('🔑 Token from storage: ${token != null ? "Available" : "NULL"}');
       
-      if (token == null || token.isEmpty) {
-        throw Exception('Token tidak ditemukan. Silakan login kembali.');
-      }
-
       return {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -57,8 +52,6 @@ class ReflectionService {
         final data = json.decode(response.body);
         print('✅ Successfully loaded ${data['data']?.length ?? 0} reflections');
         return data;
-      } else if (response.statusCode == 401) {
-        throw Exception('Sesi telah berakhir. Silakan login kembali.');
       } else if (response.statusCode == 404) {
         throw Exception('Endpoint tidak ditemukan.');
       } else {

@@ -242,10 +242,6 @@ class _TeacherChallengesScreenState extends State<TeacherChallengesScreen> {
           if (_waitingValidationCount > 0)
             Stack(
               children: [
-                IconButton(
-                  icon: Icon(Icons.task_alt),
-                  onPressed: _navigateToWaitingValidation,
-                ),
                 Positioned(
                   right: 8,
                   top: 8,

@@ -1,6 +1,6 @@
 // services/challenges_service.dart
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:keep_it_grow/services/auth_http.dart' as http;
 import 'auth_service.dart';
 import 'constants.dart';
 
@@ -9,7 +9,7 @@ class ChallengesService {
 
   // Get all challenges for student
   static Future<Map<String, dynamic>> getStudentChallenges() async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
 
     final response = await http.get(
       Uri.parse('$baseUrl/siswa/challenges'),
@@ -28,7 +28,7 @@ class ChallengesService {
   static Future<Map<String, dynamic>> getStudentChallengesByStatus(
     String status,
   ) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
 
     final response = await http.get(
       Uri.parse('$baseUrl/siswa/challenges?status=$status'),
@@ -47,7 +47,7 @@ class ChallengesService {
   static Future<Map<String, dynamic>> createChallenge(
     Map<String, dynamic> data,
   ) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
 
     final response = await http.post(
       Uri.parse('$baseUrl/siswa/challenges'),
@@ -72,7 +72,7 @@ class ChallengesService {
     int id,
     Map<String, dynamic> data,
   ) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
 
     final response = await http.put(
       Uri.parse('$baseUrl/siswa/challenges/$id'),
@@ -94,7 +94,7 @@ class ChallengesService {
 
   // Delete challenge
   static Future<void> deleteChallenge(int id) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
 
     final response = await http.delete(
       Uri.parse('$baseUrl/siswa/challenges/$id'),
@@ -109,7 +109,7 @@ class ChallengesService {
  
   // Get challenge detail
   static Future<Map<String, dynamic>> getChallengeDetail(int id) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
 
     final response = await http.get(
       Uri.parse('$baseUrl/siswa/challenges/$id'),
@@ -126,7 +126,7 @@ class ChallengesService {
 
   // Join challenge
   static Future<Map<String, dynamic>> joinChallenge(int challengeId) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
 
     final response = await http.post(
       Uri.parse('$baseUrl/siswa/challenges/$challengeId/join'),
@@ -146,7 +146,7 @@ class ChallengesService {
     int challengeId,
     String proofImagePath,
   ) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
 
     var request = http.MultipartRequest(
       'POST',

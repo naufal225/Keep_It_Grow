@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:keep_it_grow/services/auth_http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../constants.dart';
 import '../auth_service.dart';
@@ -12,7 +12,7 @@ class StudentProfileService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': 'Bearer ${await AuthService.getToken()}',
+          'Authorization': 'Bearer ${await AuthService.requireToken()}',
         },
       );
 
@@ -42,7 +42,7 @@ class StudentProfileService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': 'Bearer ${await AuthService.getToken()}',
+          'Authorization': 'Bearer ${await AuthService.requireToken()}',
         },
         body: json.encode(data),
       );
@@ -64,7 +64,7 @@ class StudentProfileService {
         Uri.parse('${ServiceConstants.apiBase}/siswa/profile/avatar'),
       );
 
-      request.headers['Authorization'] = 'Bearer ${await AuthService.getToken()}';
+      request.headers['Authorization'] = 'Bearer ${await AuthService.requireToken()}';
       
       request.files.add(await http.MultipartFile.fromPath(
         'avatar',
@@ -96,7 +96,7 @@ class StudentProfileService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Authorization': 'Bearer ${await AuthService.getToken()}',
+          'Authorization': 'Bearer ${await AuthService.requireToken()}',
         },
         body: json.encode({
           'current_password': currentPassword,

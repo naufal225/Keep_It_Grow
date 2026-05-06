@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:keep_it_grow/services/auth_http.dart' as http;
 import 'package:keep_it_grow/services/auth_service.dart';
 import 'package:keep_it_grow/services/constants.dart';
 
@@ -7,7 +7,7 @@ class ParentDashboardService {
   static const String baseUrl = ServiceConstants.apiBase;
   
   static Future<Map<String, dynamic>> getParentDashboard() async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/ortu/dashboard'),
@@ -29,7 +29,7 @@ class ParentDashboardService {
   }
 
   static Future<Map<String, dynamic>> getChildDetail(int childId) async {
-    final token = await AuthService.getToken();
+    final token = await AuthService.requireToken();
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/ortu/dashboard/child/$childId'),
