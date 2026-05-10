@@ -50,7 +50,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
           onRefresh: _loadDashboardData,
           onSeeMoreHabits: () => _navigateToScreen(2),
           onSeeMoreChallenges: () => _navigateToScreen(1),
-          onSeeParentSupport: () => _navigateToParentSupport(), // TAMBAH INI
+          onSeeParentSupport: () => _navigateToParentSupport(),
+          onSeeReflections: () => _navigateToScreen(3),
         ),
         ChallengesScreen(user: widget.user),
         HabitsScreen(user: widget.user),
@@ -173,6 +174,7 @@ class _DashboardContent extends StatelessWidget {
   final VoidCallback onSeeMoreHabits;
   final VoidCallback onSeeMoreChallenges;
   final VoidCallback onSeeParentSupport;
+  final VoidCallback onSeeReflections;
 
   const _DashboardContent({
     Key? key,
@@ -184,6 +186,7 @@ class _DashboardContent extends StatelessWidget {
     required this.onSeeMoreHabits,
     required this.onSeeMoreChallenges,
     required this.onSeeParentSupport,
+    required this.onSeeReflections,
   }) : super(key: key);
 
   @override
@@ -1106,10 +1109,10 @@ class _DashboardContent extends StatelessWidget {
   }
 
   Widget _buildReflectionSection(Map<String, dynamic> reflectionToday) {
-    final status = reflectionToday['status'] ?? 'belum';
+    final status = reflectionToday['status'] ?? 'no_template';
     final message = reflectionToday['message'] ?? '';
 
-    if (status == 'belum') {
+    if (status == 'belum' || status == 'belum_mulai' || status == 'no_template') {
       return Card(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1147,7 +1150,9 @@ class _DashboardContent extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Belum ada refleksi hari ini",
+                          status == 'no_template'
+                              ? "Belum ada template refleksi aktif"
+                              : "Refleksi belum dimulai",
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF111827),
@@ -1172,14 +1177,16 @@ class _DashboardContent extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Navigate to reflections screen
-                  },
+                  onPressed: onSeeReflections,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF3B82F6),
                     foregroundColor: Colors.white,
                   ),
-                  child: Text('Tulis Refleksi'),
+                  child: Text(
+                    status == 'no_template'
+                        ? 'Buka Halaman Refleksi'
+                        : 'Mulai Refleksi',
+                  ),
                 ),
               ),
             ],
@@ -1224,7 +1231,9 @@ class _DashboardContent extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Refleksi hari ini",
+                          status == 'draft'
+                              ? "Draft refleksi aktif"
+                              : "Refleksi periode ini",
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF111827),
@@ -1249,9 +1258,7 @@ class _DashboardContent extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {
-                    // Navigate to view all reflections
-                  },
+                  onPressed: onSeeReflections,
                   style: TextButton.styleFrom(
                     foregroundColor: Color(0xFF3B82F6),
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -1259,7 +1266,7 @@ class _DashboardContent extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text("View All Reflections"),
+                      Text(status == 'draft' ? "Lanjutkan Refleksi" : "Lihat Refleksi"),
                       SizedBox(width: 4),
                       Icon(Icons.arrow_forward, size: 16),
                     ],

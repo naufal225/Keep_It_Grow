@@ -1,10 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:keep_it_grow/models/user_model.dart';
-import 'package:keep_it_grow/services/auth_service.dart';
-import 'package:keep_it_grow/services/reflection_service.dart';
-import 'package:keep_it_grow/screens/student/create_reflection_screen.dart';
-import 'package:keep_it_grow/screens/student/reflection_detail_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:keep_it_grow/models/reflection_template_models.dart';
+import 'package:keep_it_grow/models/user_model.dart';
+import 'package:keep_it_grow/services/reflection_service.dart';
 
 class ReflectionScreen extends StatefulWidget {
   final UserModel user;
@@ -12,225 +12,216 @@ class ReflectionScreen extends StatefulWidget {
   const ReflectionScreen({Key? key, required this.user}) : super(key: key);
 
   @override
-  _ReflectionScreenState createState() => _ReflectionScreenState();
+  State<ReflectionScreen> createState() => _ReflectionScreenState();
 }
 
 class _ReflectionScreenState extends State<ReflectionScreen> {
-  List<Map<String, dynamic>> _reflections = [];
+  ActiveReflectionSubmissionContext? _activeContext;
+  List<ReflectionSubmissionSummary> _history = [];
+  final Map<int, dynamic> _answers = {};
 
   bool _isLoading = true;
+  bool _isSubmitting = false;
   String _errorMessage = '';
-  String? _selectedMonth;
-  Map<String, dynamic>? _todayReflection;
-  Map<String, dynamic>? _stats;
+
+  ReflectionTemplate? get _template => _activeContext?.template;
+  StudentReflectionSubmission? get _submission => _activeContext?.submission;
+  bool get _isReadOnly => _submission?.isReadOnly ?? false;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
+    _loadData();
   }
 
-  Future<void> _loadInitialData() async {
-    print('🔄 Starting to load initial data...');
+  Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
 
     try {
-      // Cek token dulu
-      final token = await AuthService.getToken();
-      print('🔑 Current token: ${token != null ? "Available" : "NULL"}');
+      final results = await Future.wait([
+        ReflectionService.getActiveReflectionSubmission(),
+        ReflectionService.getReflectionTemplateHistory(),
+      ]);
 
-      if (token == null) {
-        throw Exception('Anda belum login. Silakan login terlebih dahulu.');
+      final activeResponse = results[0];
+      final historyResponse = results[1];
+
+      final activeData = activeResponse['data'];
+      final historyData = historyResponse['data'] as List<dynamic>? ?? [];
+
+      ActiveReflectionSubmissionContext? context;
+      if (activeData != null) {
+        context = ActiveReflectionSubmissionContext.fromJson(
+          Map<String, dynamic>.from(activeData),
+        );
       }
 
-      // Load data secara sequential dengan error handling yang lebih baik
-      await _loadReflections();
-      await _loadTodayReflection();
-      await _loadStats();
+      _answers.clear();
+      if (context?.submission != null) {
+        context!.submission!.answerMap.forEach((key, value) {
+          _answers[int.tryParse(key) ?? 0] = value;
+        });
+      }
 
-      print('✅ All data loaded successfully');
+      setState(() {
+        _activeContext = context;
+        _history = historyData
+            .map(
+              (item) => ReflectionSubmissionSummary.fromJson(
+                Map<String, dynamic>.from(item),
+              ),
+            )
+            .toList();
+      });
     } catch (e) {
-      print('❌ Error in _loadInitialData: $e');
       setState(() {
         _errorMessage = e.toString();
       });
     } finally {
-      print('🏁 Setting isLoading to false');
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  Future<void> _loadReflections() async {
+  Future<void> _saveDraft() async {
+    await _submitToApi(isFinalSubmit: false);
+  }
+
+  Future<void> _submitFinal() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Submit Refleksi'),
+        content: const Text(
+          'Setelah submit, jawaban tidak bisa diubah lagi. Lanjutkan?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _submitToApi(isFinalSubmit: true);
+    }
+  }
+
+  Future<void> _submitToApi({required bool isFinalSubmit}) async {
+    if (_template == null) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
     try {
-      final data = await ReflectionService.getReflections(
-        month: _selectedMonth,
+      final payload = {
+        'answers': _template!.questions
+            .map((question) => {
+                  'question_id': question.id,
+                  'answer': _answers[question.id],
+                })
+            .toList(),
+      };
+
+      if (isFinalSubmit) {
+        await ReflectionService.submitReflectionTemplate(payload);
+      } else {
+        await ReflectionService.saveReflectionDraft(payload);
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isFinalSubmit
+                ? 'Refleksi berhasil disubmit.'
+                : 'Draft refleksi berhasil disimpan.',
+          ),
+          backgroundColor: Colors.green,
+        ),
       );
 
-      // Handle type conversion dengan benar
-      final List<dynamic> rawReflections = data['data'] ?? [];
-      final List<Map<String, dynamic>> convertedReflections = [];
-
-      for (var item in rawReflections) {
-        if (item is Map<String, dynamic>) {
-          convertedReflections.add(item);
-        } else {
-          // Convert jika tipe data tidak sesuai
-          convertedReflections.add(Map<String, dynamic>.from(item));
-        }
-      }
-
-      setState(() {
-        _reflections = convertedReflections;
-        print('📝 Loaded ${_reflections.length} reflections');
-      });
+      await _loadData();
     } catch (e) {
-      print('❌ Error loading reflections: $e');
-      rethrow; // Biarkan error di-handle oleh _loadInitialData
-    }
-  }
-
-  Future<void> _loadTodayReflection() async {
-    try {
-      final data = await ReflectionService.getTodayReflection();
-      final rawReflection = data['data'];
-
-      if (rawReflection != null) {
-        // Langsung gunakan data dari API
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memproses refleksi: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
         setState(() {
-          _todayReflection = rawReflection as Map<String, dynamic>;
-        });
-        print('📝 Today reflection loaded: ${_todayReflection?['mood']}');
-      } else {
-        print('📝 No reflection found for today');
-        setState(() {
-          _todayReflection = null;
+          _isSubmitting = false;
         });
       }
-    } catch (e) {
-      print('⚠️ Error loading today reflection: $e');
-      setState(() {
-        _todayReflection = null;
-      });
     }
   }
 
-  Future<void> _loadStats() async {
-    try {
-      final data = await ReflectionService.getReflectionStats();
-      setState(() {
-        _stats = data['data'];
-      });
-    } catch (e) {
-      print('⚠️ Error loading stats: $e');
-      // Jangan rethrow, set default stats
-      setState(() {
-        _stats = {
-          'total_reflections': 0,
-          'reflections_with_body': 0,
-          'current_streak': 0,
-          'mood_distribution': {},
-        };
-      });
-    }
+  void _setAnswer(int questionId, dynamic value) {
+    _answers[questionId] = value;
   }
-
-  // Future<void> _loadReflections() async {
-  //   try {
-  //     print('Loading reflections...');
-  //     final data = await ReflectionService.getReflections(
-  //       month: _selectedMonth,
-  //     );
-  //     print('Reflections loaded: ${data['data']?.length ?? 0} items');
-
-  //     setState(() {
-  //       _reflections = data['data'] ?? [];
-  //     });
-  //   } catch (e) {
-  //     print('Error loading reflections: $e');
-  //     // Jangan set error message di sini, biarkan _loadInitialData yang handle
-  //     rethrow;
-  //   }
-  // }
-
-  // Future<void> _loadTodayReflection() async {
-  //   try {
-  //     print('Loading today reflection...');
-  //     final data = await ReflectionService.getTodayReflection();
-  //     print('Today reflection: ${data['data']}');
-
-  //     setState(() {
-  //       _todayReflection = data['data'];
-  //     });
-  //   } catch (e) {
-  //     print('Error loading today reflection: $e');
-  //     // Set todayReflection ke null jika error
-  //     setState(() {
-  //       _todayReflection = null;
-  //     });
-  //   }
-  // }
-
-  // Future<void> _loadStats() async {
-  //   try {
-  //     print('Loading stats...');
-  //     final data = await ReflectionService.getReflectionStats();
-  //     print('Stats loaded: $data');
-
-  //     setState(() {
-  //       _stats = data['data'];
-  //     });
-  //   } catch (e) {
-  //     print('Error loading stats: $e');
-  //     // Set stats ke null jika error
-  //     setState(() {
-  //       _stats = null;
-  //     });
-  //   }
-  // }
 
   Widget _buildHeader() {
     return Container(
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFFFFF7ED), Color(0xFFFEF3C7)],
         ),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
       ),
       child: Row(
         children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.psychology_rounded,
+              color: Color(0xFFF59E0B),
+              size: 30,
+            ),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Refleksi Harian",
+                const Text(
+                  'Refleksi Diri',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF111827),
-                    fontFamily: 'Poppins',
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  "Catat perasaan dan pembelajaranmu hari ini",
-                  style: TextStyle(
-                    fontSize: 16,
+                  _template?.title ??
+                      'Template refleksi aktif akan muncul di sini.',
+                  style: const TextStyle(
+                    fontSize: 14,
                     color: Color(0xFF6B7280),
                     fontWeight: FontWeight.w500,
                   ),
@@ -238,182 +229,15 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
               ],
             ),
           ),
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              border: Border.all(color: Color(0xFFF59E0B), width: 2),
-            ),
-            child: Icon(
-              Icons.psychology_rounded,
-              size: 30,
-              color: Color(0xFFF59E0B),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildTodayReflectionCard() {
-    if (_todayReflection == null) {
-      return GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CreateReflectionScreen(user: widget.user),
-            ),
-          ).then((refresh) {
-            if (refresh == true) {
-              _loadInitialData();
-            }
-          });
-        },
-        child: Container(
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
-            border: Border.all(color: Color(0xFFF59E0B), width: 2),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Color(0xFFFEF3C7),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.add, color: Color(0xFFF59E0B)),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Belum ada refleksi hari ini",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF111827),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      "Klik untuk menulis refleksi harianmu",
-                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios, color: Color(0xFF6B7280), size: 16),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final reflection = _todayReflection!;
-    final mood = reflection['mood'] ?? 'neutral';
-    final body = reflection['body'] ?? '';
-    final date = reflection['date'] ?? '';
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ReflectionDetailScreen(
-              user: widget.user,
-              reflectionId: reflection['id'],
-            ),
-          ),
-        ).then((refresh) {
-          if (refresh == true) {
-            _loadInitialData();
-          }
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _buildMoodIcon(mood),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    "Refleksi Hari Ini",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _getMoodColor(mood).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _getMoodText(mood),
-                    style: TextStyle(
-                      color: _getMoodColor(mood),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12),
-            Text(
-              body.length > 100 ? '${body.substring(0, 100)}...' : body,
-              style: TextStyle(
-                color: Color(0xFF6B7280),
-                fontSize: 14,
-                height: 1.5,
-              ),
-            ), ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsCard() {
-    final totalReflections = _stats?['total_reflections'] ?? 0;
-    final reflectionsWithBody = _stats?['reflections_with_body'] ?? 0;
-    final currentStreak = _stats?['current_streak'] ?? 0;
-    final moodDistribution = _stats?['mood_distribution'] ?? {};
-
+  Widget _buildNoTemplateState() {
     return Container(
-      padding: EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -421,398 +245,1101 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
+        children: const [
+          Icon(Icons.event_busy, size: 56, color: Color(0xFF9CA3AF)),
+          SizedBox(height: 16),
+          Text(
+            'Belum ada template refleksi aktif',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF111827),
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Admin belum mengaktifkan template refleksi. Coba lagi nanti.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveTemplateCard() {
+    final period = _activeContext?.period;
+    final status = _submission?.status ?? 'belum_mulai';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem(
-                "$totalReflections",
-                "Total",
-                Icons.book,
-                Color(0xFF3B82F6),
+              Expanded(
+                child: Text(
+                  _template?.title ?? '-',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
+                ),
               ),
-              _buildStatItem(
-                "$reflectionsWithBody",
-                "Dengan Konten",
-                Icons.article,
-                Color(0xFF10B981),
-              ),
-              _buildStatItem(
-                "$currentStreak",
-                "Streak",
-                Icons.local_fire_department,
-                Color(0xFFEF4444),
-              ),
+              _buildStatusChip(status),
             ],
           ),
-          SizedBox(height: 16),
-          if (moodDistribution.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          if ((_template?.description ?? '').isNotEmpty)
             Text(
-              "Distribusi Mood Bulan Ini",
-              style: TextStyle(
+              _template!.description!,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6B7280),
+                height: 1.5,
+              ),
+            ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 18, color: Color(0xFF6B7280)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    period?.label ?? '-',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    final config = switch (status) {
+      'submitted' => {
+          'label': 'Submitted',
+          'bg': const Color(0xFFE0F2FE),
+          'fg': const Color(0xFF0369A1),
+        },
+      'draft' => {
+          'label': 'Draft',
+          'bg': const Color(0xFFFEF3C7),
+          'fg': const Color(0xFFB45309),
+        },
+      _ => {
+          'label': 'Belum Mulai',
+          'bg': const Color(0xFFF3F4F6),
+          'fg': const Color(0xFF4B5563),
+        },
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: config['bg'] as Color,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        config['label'] as String,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: config['fg'] as Color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuestionCard(ReflectionTemplateQuestion question) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      question.label,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                    if ((question.description ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        question.description!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6B7280),
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (question.isRequired)
+                Container(
+                  margin: const EdgeInsets.only(left: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    'Wajib',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFB91C1C),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildQuestionInput(question),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestionInput(ReflectionTemplateQuestion question) {
+    if (_isReadOnly) {
+      return _buildReadOnlyAnswer(question, _answers[question.id]);
+    }
+
+    switch (question.type) {
+      case 'text':
+        return TextFormField(
+          key: ValueKey('text_${question.id}'),
+          initialValue: (_answers[question.id] ?? '').toString(),
+          decoration: _inputDecoration(question.options['placeholder']),
+          onChanged: (value) => _setAnswer(question.id, value),
+        );
+      case 'textarea':
+        return TextFormField(
+          key: ValueKey('textarea_${question.id}'),
+          initialValue: (_answers[question.id] ?? '').toString(),
+          maxLines: 5,
+          decoration: _inputDecoration(question.options['placeholder']),
+          onChanged: (value) => _setAnswer(question.id, value),
+        );
+      case 'number':
+        return TextFormField(
+          key: ValueKey('number_${question.id}'),
+          initialValue: _answers[question.id]?.toString() ?? '',
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: _inputDecoration(question.options['placeholder']),
+          onChanged: (value) => _setAnswer(
+            question.id,
+            value.trim().isEmpty ? null : num.tryParse(value),
+          ),
+        );
+      case 'scale':
+      case 'mood_scale':
+        return _buildScaleInput(question);
+      case 'single_choice':
+        return _buildSingleChoiceInput(question);
+      case 'multiple_choice':
+        return _buildMultipleChoiceInput(question);
+      case 'emotion_picker':
+        return _buildEmotionPicker(question);
+      case 'emotion_table':
+        return _buildEmotionTable(question);
+      case 'date_range':
+        return _buildDateRangeInput(question);
+      default:
+        return const Text('Tipe pertanyaan belum didukung.');
+    }
+  }
+
+  InputDecoration _inputDecoration(String? placeholder) {
+    return InputDecoration(
+      hintText: placeholder,
+      filled: true,
+      fillColor: const Color(0xFFF9FAFB),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.all(16),
+    );
+  }
+
+  Widget _buildScaleInput(ReflectionTemplateQuestion question) {
+    final min = (question.options['min'] ?? 1).toDouble();
+    final max = (question.options['max'] ?? 5).toDouble();
+    final raw = _answers[question.id];
+    final value = raw is num ? raw.toDouble() : min;
+    final divisions = max > min ? (max - min).toInt() : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              (question.options['min_label'] ?? min.toInt().toString()).toString(),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            ),
+            const Spacer(),
+            Text(
+              value.toStringAsFixed(0),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111827),
+              ),
+            ),
+            const Spacer(),
+            Text(
+              (question.options['max_label'] ?? max.toInt().toString()).toString(),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            ),
+          ],
+        ),
+        Slider(
+          min: min,
+          max: max,
+          divisions: divisions,
+          value: value.clamp(min, max),
+          onChanged: (newValue) {
+            setState(() {
+              _setAnswer(question.id, newValue.round());
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSingleChoiceInput(ReflectionTemplateQuestion question) {
+    final choices = (question.options['choices'] as List<dynamic>? ?? [])
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+    final selected = _answers[question.id];
+
+    return Column(
+      children: choices.map((choice) {
+        return RadioListTile<String>(
+          value: choice['value'].toString(),
+          groupValue: selected?.toString(),
+          title: Text(choice['label']?.toString() ?? choice['value'].toString()),
+          onChanged: (value) {
+            setState(() {
+              _setAnswer(question.id, value);
+            });
+          },
+          contentPadding: EdgeInsets.zero,
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildMultipleChoiceInput(ReflectionTemplateQuestion question) {
+    final choices = _readOptionList(question.options['choices']);
+    final selected = _readStringList(_answers[question.id]);
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: choices.map((choice) {
+        final value = choice['value'].toString();
+        final isSelected = selected.contains(value);
+
+        return FilterChip(
+          selected: isSelected,
+          label: Text(choice['label']?.toString() ?? value),
+          onSelected: (checked) {
+            setState(() {
+              if (checked) {
+                selected.add(value);
+              } else {
+                selected.remove(value);
+              }
+              _setAnswer(question.id, selected.toSet().toList());
+            });
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildEmotionPicker(ReflectionTemplateQuestion question) {
+    final choices = _readOptionList(question.options['choices']);
+    final allowMultiple = question.options['allow_multiple'] == true;
+    final selected = _answers[question.id];
+    final selectedList = _readStringList(selected);
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: choices.map((choice) {
+        final value = choice['value'].toString();
+        final label = choice['label']?.toString() ?? value;
+        final emoji = choice['emoji']?.toString() ?? '🙂';
+        final isSelected = allowMultiple
+            ? selectedList.contains(value)
+            : selected?.toString() == value;
+
+        return ChoiceChip(
+          selected: isSelected,
+          label: Text('$emoji  $label'),
+          onSelected: (checked) {
+            setState(() {
+              if (allowMultiple) {
+                if (checked) {
+                  selectedList.add(value);
+                } else {
+                  selectedList.remove(value);
+                }
+                _setAnswer(question.id, selectedList.toSet().toList());
+              } else {
+                _setAnswer(question.id, checked ? value : null);
+              }
+            });
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildEmotionTable(ReflectionTemplateQuestion question) {
+    final emotions = _readOptionList(question.options['emotions']);
+    final rowFields = _readOptionList(question.options['row_fields']);
+    final answer = _readMap(_answers[question.id]);
+
+    return Column(
+      children: emotions.map((emotion) {
+        final emotionKey = emotion['value'].toString();
+        final currentRow = _readMap(answer[emotionKey]);
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF9FAFB),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${emotion['emoji'] ?? '🙂'} ${emotion['label'] ?? emotionKey}',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111827),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...rowFields.map((field) {
+                final fieldKey = field['key'].toString();
+                final label = field['label']?.toString() ?? fieldKey;
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: TextFormField(
+                    key: ValueKey('emotion_${question.id}_${emotionKey}_$fieldKey'),
+                    initialValue: currentRow[fieldKey]?.toString() ?? '',
+                    maxLines: field['type'] == 'textarea' ? 3 : 1,
+                    decoration: _inputDecoration(label),
+                    onChanged: (value) {
+                      final latestAnswer = Map<String, dynamic>.from(
+                        _readMap(_answers[question.id]),
+                      );
+                      final latestRow = _readMap(latestAnswer[emotionKey]);
+                      latestRow[fieldKey] = value;
+                      latestAnswer[emotionKey] = latestRow;
+                      _setAnswer(question.id, latestAnswer);
+                    },
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDateRangeInput(ReflectionTemplateQuestion question) {
+    final answer = _readMap(_answers[question.id]);
+
+    return Row(
+      children: [
+        Expanded(
+          child: _buildDatePickerField(
+            label: question.options['start_label']?.toString() ?? 'Tanggal mulai',
+            value: answer['start_date']?.toString(),
+            onTap: () async {
+              final selected = await _pickDate(answer['start_date']?.toString());
+              if (selected == null) return;
+              setState(() {
+                final latestAnswer = Map<String, dynamic>.from(
+                  _readMap(_answers[question.id]),
+                );
+                latestAnswer['start_date'] = selected;
+                _setAnswer(question.id, latestAnswer);
+              });
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildDatePickerField(
+            label: question.options['end_label']?.toString() ?? 'Tanggal selesai',
+            value: answer['end_date']?.toString(),
+            onTap: () async {
+              final selected = await _pickDate(answer['end_date']?.toString());
+              if (selected == null) return;
+              setState(() {
+                final latestAnswer = Map<String, dynamic>.from(
+                  _readMap(_answers[question.id]),
+                );
+                latestAnswer['end_date'] = selected;
+                _setAnswer(question.id, latestAnswer);
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDatePickerField({
+    required String label,
+    required String? value,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF9FAFB),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF6B7280),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value == null || value.isEmpty
+                  ? 'Pilih tanggal'
+                  : _formatDate(value),
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF111827),
               ),
             ),
-            SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: moodDistribution.entries.map<Widget>((entry) {
-                return _buildMoodDistributionItem(entry.key, entry.value);
-              }).toList(),
-            ),
           ],
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatItem(
-    String value,
-    String label,
-    IconData icon,
-    Color color,
+  Future<String?> _pickDate(String? currentValue) async {
+    final initialDate = currentValue != null && currentValue.isNotEmpty
+        ? DateTime.tryParse(currentValue) ?? DateTime.now()
+        : DateTime.now();
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked == null) return null;
+    return DateFormat('yyyy-MM-dd').format(picked);
+  }
+
+  Widget _buildReadOnlyAnswer(
+    ReflectionTemplateQuestion question,
+    dynamic answer,
   ) {
-    return Column(
-      children: [
-        Container(
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 24),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Text(
+        _formatAnswerForDisplay(question, answer),
+        style: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF374151),
+          height: 1.5,
         ),
-        SizedBox(height: 8),
-        Text(
-          value,
+      ),
+    );
+  }
+
+  String _formatAnswerForDisplay(
+    ReflectionTemplateQuestion question,
+    dynamic answer,
+  ) {
+    if (answer == null) return 'Belum dijawab';
+
+    if (question.type == 'single_choice') {
+      return _resolveChoiceLabel(question, answer.toString());
+    }
+
+    if (question.type == 'emotion_picker') {
+      final selectedValues = _readStringList(answer);
+      if (selectedValues.isEmpty) {
+        return 'Belum dijawab';
+      }
+
+      return selectedValues
+          .map((item) => _resolveChoiceLabel(question, item))
+          .join(', ');
+    }
+
+    if (question.type == 'multiple_choice') {
+      final selectedValues = _readStringList(answer);
+      if (selectedValues.isEmpty) {
+        return 'Belum dijawab';
+      }
+
+      return selectedValues
+          .map((item) => _resolveChoiceLabel(question, item.toString()))
+          .join(', ');
+    }
+
+    if (question.type == 'date_range' && answer is Map) {
+      final map = _readMap(answer);
+      final startDate = map['start_date']?.toString() ?? '-';
+      final endDate = map['end_date']?.toString() ?? '-';
+      return '${_formatDate(startDate)} - ${_formatDate(endDate)}';
+    }
+
+    if (answer is Map || answer is List) {
+      return const JsonEncoder.withIndent('  ').convert(answer);
+    }
+
+    return answer.toString();
+  }
+
+  String _resolveChoiceLabel(
+    ReflectionTemplateQuestion question,
+    String value,
+  ) {
+    final choices = _readOptionList(question.options['choices']);
+
+    for (final choice in choices) {
+      if (choice['value']?.toString() == value) {
+        final emoji = choice['emoji']?.toString();
+        final label = choice['label']?.toString() ?? value;
+        return emoji != null ? '$emoji $label' : label;
+      }
+    }
+
+    return value;
+  }
+
+  List<Map<String, dynamic>> _readOptionList(dynamic value) {
+    if (value is! List) {
+      return const [];
+    }
+
+    return value
+        .whereType<Object>()
+        .map((item) => _readMap(item))
+        .where((item) => item.isNotEmpty)
+        .toList();
+  }
+
+  List<String> _readStringList(dynamic value) {
+    if (value == null) {
+      return <String>[];
+    }
+
+    if (value is List) {
+      return value.map((item) => item.toString()).toList();
+    }
+
+    if (value is String) {
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? <String>[] : <String>[trimmed];
+    }
+
+    return <String>[value.toString()];
+  }
+
+  Map<String, dynamic> _readMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(value);
+    }
+
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+
+    return <String, dynamic>{};
+  }
+
+  String _formatDate(String value) {
+    final date = DateTime.tryParse(value);
+    if (date == null) return value;
+    return DateFormat('dd MMM yyyy').format(date);
+  }
+
+  Widget _buildActionButtons() {
+    if (_template == null || _isReadOnly) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: _isSubmitting ? null : _saveDraft,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF3B82F6),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: _isSubmitting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Simpan Draft'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _isSubmitting ? null : _submitFinal,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3B82F6),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: const Text('Submit Final'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHistorySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Riwayat Refleksi',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.w700,
             color: Color(0xFF111827),
           ),
         ),
-        SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Color(0xFF6B7280),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMoodDistributionItem(String mood, int count) {
-    return Column(
-      children: [
-        _buildMoodIcon(mood, size: 32),
-        SizedBox(height: 4),
-        Text(
-          '$count',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF111827),
-          ),
-        ),
-        SizedBox(height: 2),
-        Text(
-          _getMoodText(mood),
-          style: TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildReflectionCard(Map<String, dynamic> reflection) {
-    final mood = reflection['mood'] ?? 'neutral';
-    final body = reflection['body'] ?? '';
-    final date = reflection['date'] ?? '';
-
-    return Card(
-      margin: EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: _buildMoodIcon(mood),
-        title: Text(
-          DateFormat('dd MMM yyyy').format(DateTime.parse(date)),
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF111827),
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 4),
-            Text(
-              body.length > 80 ? '${body.substring(0, 80)}...' : body,
-              style: TextStyle(color: Color(0xFF6B7280), fontSize: 12),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+        const SizedBox(height: 16),
+        if (_history.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
             ),
-            SizedBox(height: 8),
-          ],
-        ),
-        trailing: Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-          color: Color(0xFF6B7280),
-        ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ReflectionDetailScreen(
-                user: widget.user,
-                reflectionId: reflection['id'],
-              ),
+            child: const Text(
+              'Belum ada riwayat refleksi yang sudah disubmit.',
+              style: TextStyle(color: Color(0xFF6B7280)),
             ),
-          ).then((refresh) {
-            if (refresh == true) {
-              _loadReflections();
-            }
-          });
-        },
-      ),
-    );
-  }
-
-  Widget _buildMoodIcon(String mood, {double size = 40}) {
-    final color = _getMoodColor(mood);
-    final icon = _getMoodIcon(mood);
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        shape: BoxShape.circle,
-        border: Border.all(color: color, width: 2),
-      ),
-      child: Center(
-        child: Icon(icon, color: color, size: size * 0.5),
-      ),
-    );
-  }
-
-  IconData _getMoodIcon(String mood) {
-    switch (mood) {
-      case 'happy':
-        return Icons.sentiment_very_satisfied;
-      case 'sad':
-        return Icons.sentiment_very_dissatisfied;
-      case 'angry':
-        return Icons.sentiment_very_dissatisfied;
-      case 'tired':
-        return Icons.sentiment_dissatisfied;
-      default: // neutral
-        return Icons.sentiment_neutral;
-    }
-  }
-
-  Color _getMoodColor(String mood) {
-    switch (mood) {
-      case 'happy':
-        return Color(0xFF10B981);
-      case 'sad':
-        return Color(0xFF3B82F6);
-      case 'angry':
-        return Color(0xFFEF4444);
-      case 'tired':
-        return Color(0xFF8B5CF6);
-      default: // neutral
-        return Color(0xFFF59E0B);
-    }
-  }
-
-  String _getMoodText(String mood) {
-    switch (mood) {
-      case 'happy':
-        return 'Senang';
-      case 'sad':
-        return 'Sedih';
-      case 'angry':
-        return 'Marah';
-      case 'tired':
-        return 'Lelah';
-      default: // neutral
-        return 'Biasa';
-    }
-  }
-
-  Widget _buildEmptyState() {
-    return Container(
-      padding: EdgeInsets.all(40),
-      child: Column(
-        children: [
-          Icon(Icons.psychology_outlined, size: 80, color: Color(0xFF9CA3AF)),
-          SizedBox(height: 16),
-          Text(
-            "Belum ada refleksi",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF6B7280),
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            "Mulai dengan menulis refleksi harian pertamamu",
-            style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      CreateReflectionScreen(user: widget.user),
+          )
+        else
+          Column(
+            children: _history.map((item) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
-              ).then((refresh) {
-                if (refresh == true) {
-                  _loadInitialData();
-                }
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFF59E0B),
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            child: Text('Tulis Refleksi Pertama'),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  title: Text(
+                    item.templateTitle,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      '${item.reflectionStartDate ?? '-'}'
+                      '${item.reflectionEndDate != null ? ' s/d ${item.reflectionEndDate}' : ''}',
+                      style: const TextStyle(color: Color(0xFF6B7280)),
+                    ),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ReflectionHistoryDetailScreen(
+                          summary: item,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }).toList(),
           ),
-        ],
-      ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text(
-          'Refleksi Harian',
+        title: const Text(
+          'Refleksi Diri',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             color: Color(0xFF111827),
           ),
         ),
         backgroundColor: Colors.white,
-        foregroundColor: Color(0xFF111827),
+        foregroundColor: const Color(0xFF111827),
         elevation: 0,
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : _errorMessage.isNotEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Color(0xFFEF4444)),
-                  SizedBox(height: 16),
-                  Text(
-                    'Gagal memuat refleksi',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF111827),
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Color(0xFFEF4444),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Gagal memuat refleksi',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111827),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _errorMessage,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Color(0xFF6B7280)),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _loadData,
+                          child: const Text('Coba Lagi'),
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    _errorMessage,
-                    style: TextStyle(color: Color(0xFF6B7280)),
-                    textAlign: TextAlign.center,
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadData,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _buildHeader(),
+                      const SizedBox(height: 24),
+                      if (_template == null) ...[
+                        _buildNoTemplateState(),
+                      ] else ...[
+                        _buildActiveTemplateCard(),
+                        const SizedBox(height: 20),
+                        ..._template!.questions
+                            .map((question) => _buildQuestionCard(question))
+                            .toList(),
+                        const SizedBox(height: 4),
+                        _buildActionButtons(),
+                      ],
+                      const SizedBox(height: 28),
+                      _buildHistorySection(),
+                      const SizedBox(height: 20),
+                    ],
                   ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _loadInitialData,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFF59E0B),
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text('Coba Lagi'),
-                  ),
-                ],
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: _loadInitialData,
-              child: SingleChildScrollView(
-                physics: AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _buildHeader(),
-                    SizedBox(height: 24),
-                    _buildTodayReflectionCard(),
-                    SizedBox(height: 24),
-                    _buildStatsCard(),
-                    SizedBox(height: 24),
-                    // Change the declaration at the top of your class
+                ),
+    );
+  }
+}
 
-                    // Then in your build method, replace the problematic section with:
-                    _reflections.isEmpty
-                        ? _buildEmptyState()
-                        : Column(
+class ReflectionHistoryDetailScreen extends StatefulWidget {
+  final ReflectionSubmissionSummary summary;
+
+  const ReflectionHistoryDetailScreen({Key? key, required this.summary})
+      : super(key: key);
+
+  @override
+  State<ReflectionHistoryDetailScreen> createState() =>
+      _ReflectionHistoryDetailScreenState();
+}
+
+class _ReflectionHistoryDetailScreenState
+    extends State<ReflectionHistoryDetailScreen> {
+  ReflectionHistoryDetail? _detail;
+  bool _isLoading = true;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDetail();
+  }
+
+  Future<void> _loadDetail() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      final response = await ReflectionService.getReflectionTemplateHistoryDetail(
+        widget.summary.id,
+      );
+      final data = response['data'];
+
+      if (data == null) {
+        throw Exception('Detail refleksi tidak ditemukan.');
+      }
+
+      setState(() {
+        _detail = ReflectionHistoryDetail.fromJson(
+          Map<String, dynamic>.from(data),
+        );
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  String _formatAnswer(
+    ReflectionTemplateQuestion question,
+    Map<String, dynamic> answerMap,
+  ) {
+    final answer = answerMap[question.id.toString()];
+
+    if (answer == null) return 'Belum dijawab';
+    if (question.type == 'date_range' && answer is Map) {
+      final map = _readMap(answer);
+      return '${map['start_date'] ?? '-'} - ${map['end_date'] ?? '-'}';
+    }
+    if (answer is Map || answer is List) {
+      return const JsonEncoder.withIndent('  ').convert(answer);
+    }
+    return answer.toString();
+  }
+
+  Map<String, dynamic> _readMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(value);
+    }
+
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+
+    return <String, dynamic>{};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
+      appBar: AppBar(
+        title: const Text('Detail Refleksi'),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF111827),
+        elevation: 0,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage.isNotEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      _errorMessage,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Color(0xFF6B7280)),
+                    ),
+                  ),
+                )
+              : _detail == null
+                  ? const Center(child: Text('Data tidak ditemukan'))
+                  : ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Riwayat Refleksi",
-                                style: TextStyle(
+                                _detail!.template.title,
+                                style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF111827),
-                                  fontFamily: 'Poppins',
                                 ),
                               ),
-                              SizedBox(height: 16),
-                              // Tampilkan daftar reflections
-                              Column(
-                                children: _reflections
-                                    .map<Widget>(
-                                      (reflection) =>
-                                          _buildReflectionCard(reflection),
-                                    )
-                                    .toList(),
+                              const SizedBox(height: 8),
+                              Text(
+                                widget.summary.submittedAt ?? '-',
+                                style: const TextStyle(
+                                  color: Color(0xFF6B7280),
+                                ),
                               ),
                             ],
                           ),
-                  ],
-                ),
-              ),
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CreateReflectionScreen(user: widget.user),
-            ),
-          ).then((refresh) {
-            if (refresh == true) {
-              _loadInitialData();
-            }
-          });
-        },
-        backgroundColor: Color(0xFFF59E0B),
-        foregroundColor: Colors.white,
-        child: Icon(Icons.add),
-      ),
+                        ),
+                        const SizedBox(height: 20),
+                        ..._detail!.template.questions.map((question) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 14),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  question.label,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF111827),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF9FAFB),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Text(
+                                    _formatAnswer(
+                                      question,
+                                      _detail!.submission.answerMap,
+                                    ),
+                                    style: const TextStyle(
+                                      height: 1.5,
+                                      color: Color(0xFF374151),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    ),
     );
   }
 }
